@@ -38,6 +38,21 @@ void EnvironmentLight::init() {
 	// TODO 3-2 Part 3 Task 3 Steps 2,3
 	// Store the marginal distribution for y to marginal_y
 	// Store the conditional distribution for x given y to conds_y
+    double marginal = 0;
+    for (int j = 0; j < h; ++j) {
+        double marginalTemp = 0;
+        for (int i = 0; i < w; ++i) {
+            pdf_envmap[w * j + i] = pdf_envmap[w * j + i]/sum;
+            marginalTemp += pdf_envmap[w * j + i];
+        }
+        double conditional = 0;
+        for (int i = 0; i < w; ++i) {
+            conditional += pdf_envmap[w * j + i];
+            conds_y[j * w +i] = conditional/marginalTemp;
+        }
+        marginal += marginalTemp;
+        marginal_y[j] = marginal;
+    }
 
 	if (false)
 		std::cout << "Saving out probability_debug image for debug." << std::endl;
@@ -117,15 +132,42 @@ Spectrum EnvironmentLight::sample_L(const Vector3D& p, Vector3D* wi,
   	// TODO: 3-2 Part 3 Tasks 2 and 3 (step 4)
 	// First implement uniform sphere sampling for the environment light
 	// Later implement full importance sampling
-
-    return Spectrum();
+    /*Vector3D dir = sampler_uniform_sphere.get_sample();
+    *wi = dir;
+    Vector2D polar = dir_to_theta_phi(dir);
+    *pdf = 1.0/(4.0*PI);
+    *distToLight = INF_D;
+    Vector2D xy = theta_phi_to_xy(polar);
+    return bilerp(xy);*/
+    uint32_t w = envMap->w, h = envMap->h;
+    Vector2D sample = sampler_uniform2d.get_sample();
+    int x, y;
+    for (int j = 0; j < h; j++) {
+        if (marginal_y[j] >= sample.y) {
+            y = j;
+            break;
+        }
+    }
+    for (int i = 0; i < w; i++) {
+        if (conds_y[y+i] >= sample.x) {
+            x = i;
+            break;
+        }
+    }
+    Vector2D polar = xy_to_theta_phi(Vector2D(x, y));
+    Vector3D dir = theta_phi_to_dir(polar);
+    *wi = dir;
+    *pdf = pdf_envmap[y*w + x]*w*h/(2*PI*PI*sin(polar.x));
+    *distToLight = INF_D;
+    return envMap->data[w * y + x];
 }
 
 Spectrum EnvironmentLight::sample_dir(const Ray& r) const {
   // TODO: 3-2 Part 3 Task 1
   // Use the helper functions to convert r.d into (x,y)
   // then bilerp the return value
-	return Spectrum();
+    Vector2D xy = theta_phi_to_xy(dir_to_theta_phi(r.d));
+	return bilerp(xy);
 
 }
 
