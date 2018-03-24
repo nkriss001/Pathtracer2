@@ -8,5 +8,7 @@ varying vec3 fNormal;
 
 void main() {
     // TODO: Part 5.1
-    gl_FragColor = vec4(vec3(0.0), 1.0);
+    float k_d = 1.0;
+    float dist = length(lPosition - fPosition);
+    gl_FragColor = k_d*vec4(lIntensity/(dist*dist) * max(0.0, dot((lPosition - fPosition)/dist, fNormal/length(fNormal))), 1.0);
 }

@@ -182,7 +182,6 @@ Ray Camera::generate_ray(double x, double y) const {
   Ray ray = Ray(pos, dir, fClip, 0);
   ray.min_t = nClip;
   return ray;
-
 }
 
 Ray Camera::generate_ray_for_thin_lens(double x, double y, double rndR, double rndTheta) const {
@@ -190,7 +189,15 @@ Ray Camera::generate_ray_for_thin_lens(double x, double y, double rndR, double r
     // Todo 3-2, Task 4:
     // compute position and direction of ray from the input sensor sample coordinate.
     // Note: use rndR and rndTheta to uniformly sample a unit disk.
-    return Ray(Vector3D(),Vector3D());
+    Vector3D left = Vector3D(-tan(radians(hFov)*.5), -tan(radians(vFov)*.5),-1);
+    Vector3D right = Vector3D(tan(radians(hFov)*.5), tan(radians(vFov)*.5),-1);
+    Vector3D sensor = Vector3D((1 - x)*left.x + x*right.x, (1 - y)*left.y + y*right.y, -1);
+    Vector3D pLens = Vector3D(lensRadius*sqrt(rndR)*cos(2*PI*rndTheta), lensRadius*sqrt(rndR)*sin(2*PI*rndTheta), 0);
+    Vector3D pFocus = sensor * focalDistance - pLens;
+    Vector3D dir = (c2w * pFocus)/(c2w * pFocus).norm();
+    Ray ray = Ray(c2w * pLens + pos, dir, fClip, 0);
+    ray.min_t = nClip;
+    return ray;
 }
 
 

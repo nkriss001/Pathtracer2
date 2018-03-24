@@ -118,10 +118,11 @@ void PathTracer::set_camera(Camera *camera) {
     return;
   }
   this->camera = camera;
-  if (!this->camera->lensRadius)
-    this->camera->lensRadius = lensRadius;
-  if (!this->camera->focalDistance) 
-    this->camera->focalDistance = focalDistance;
+  
+  //if (!this->camera->lensRadius)
+  this->camera->lensRadius = lensRadius;
+  //if (!this->camera->focalDistance) 
+  this->camera->focalDistance = focalDistance;
   if (has_valid_configuration()) {
     state = READY;
   }
@@ -651,7 +652,7 @@ Spectrum PathTracer::at_least_one_bounce_radiance(const Ray&r, const Intersectio
 
   Spectrum L_out;
   bool delta = isect.bsdf->is_delta();
-  if (!delta) {
+  if (r.depth != 0 && !delta) {
     L_out += one_bounce_radiance(r, isect);
   }
   // TODO (Part 4.2): Here is where your code for sampling the BSDF,
@@ -661,12 +662,12 @@ Spectrum PathTracer::at_least_one_bounce_radiance(const Ray&r, const Intersectio
   Vector3D w_in;
   float pdf;
   Spectrum sample = isect.bsdf->sample_f(w_out, &w_in, &pdf);
-  bool t = (coin_flip(1 - rr) && (max_ray_depth <= 1 || r.depth != max_ray_depth)) || (r.depth <= 1);
-  if (!t && pdf > 0) {
-    Vector3D wi_world = o2w * w_in;
-    Ray newRay((EPS_D * wi_world) + hit_p, wi_world, INF_D, r.depth - 1);
-    Intersection newIsect;
-    if (bvh->intersect(newRay, &newIsect)) {
+  Vector3D wi_world = o2w * w_in;
+  Ray newRay((EPS_D * wi_world) + hit_p, wi_world, INF_D, r.depth - 1);
+  Intersection newIsect;
+  if (bvh->intersect(newRay, &newIsect)) {
+    bool t = (coin_flip(1 - rr) && (max_ray_depth <= 1 || r.depth != max_ray_depth)) || (r.depth <= 1);
+    if (!t && pdf > 0) {
       Spectrum bounce = at_least_one_bounce_radiance(newRay, newIsect);
       if (delta) {
         bounce += zero_bounce_radiance(newRay, newIsect);
@@ -676,9 +677,9 @@ Spectrum PathTracer::at_least_one_bounce_radiance(const Ray&r, const Intersectio
       } else {
         L_out += (abs_cos_theta(w_in) * sample * bounce)/pdf/rr;
       }
-    } else if (envLight != NULL) {
-      L_out += (abs_cos_theta(w_in) * sample * envLight->sample_dir(newRay))/pdf;
     }
+  } else if (envLight != NULL) {
+    L_out += envLight->sample_dir(newRay);
   }
   return L_out;
 
@@ -732,7 +733,9 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
   double s1 = 0;
   double s2 = 0;
   if (ns_aa == 1) {
-    Ray ray = camera->generate_ray((x + 0.5)/width, (y + 0.5)/height);
+    //Ray ray = camera->generate_ray((x + 0.5)/width, (y + 0.5)/height);
+    Vector2D rnd = gridSampler->get_sample();
+    Ray ray = camera->generate_ray_for_thin_lens((x + 0.5)/width, (y + 0.5)/height, rnd.x, rnd.y);
     ray.depth = max_ray_depth;
     return est_radiance_global_illumination(ray);
   } else {
@@ -747,7 +750,9 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
         } 
       }
       Vector2D offset = gridSampler->get_sample();
-      Ray ray = camera->generate_ray((x + offset.x)/width, (y + offset.y)/height);
+      //Ray ray = camera->generate_ray((x + offset.x)/width, (y + offset.y)/height);
+      Vector2D rnd = gridSampler->get_sample();
+      Ray ray = camera->generate_ray_for_thin_lens((x + offset.x)/width, (y + offset.y)/height, rnd.x, rnd.y);
       ray.depth = max_ray_depth;
       Spectrum estIllum = est_radiance_global_illumination(ray);
       spect += estIllum;

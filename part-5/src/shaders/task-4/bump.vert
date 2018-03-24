@@ -21,7 +21,14 @@ void main() {
     // TODO: Compute displaced normals
     float normalScaling = 1.0;
 
-    fPosition = vec3(0.0);
-    fNormal = vec3(0.0);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(offset, 1.0);
+    vec3 bitangent = cross(normal, tangent);
+    mat3 TBN = mat3(tangent, bitangent, normal);
+    float h_uv = texture2D(textureDisplacement, uv).r;
+    float dU = heightScaling * normalScaling * (texture2D(textureDisplacement, vec2(uv.x + 1.0/textureDimension.x, uv.y)).r - h_uv);
+    float dV = heightScaling * normalScaling * (texture2D(textureDisplacement, vec2(uv.x, uv.y + 1.0/textureDimension.y)).r - h_uv);
+
+    vec3 lNormal = vec3(-dU, -dV, 1.0);
+    fPosition = offset;
+    fNormal = TBN * lNormal;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(fPosition, 1.0);
 }

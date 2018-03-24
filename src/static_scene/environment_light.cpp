@@ -48,13 +48,13 @@ void EnvironmentLight::init() {
         double conditional = 0;
         for (int i = 0; i < w; ++i) {
             conditional += pdf_envmap[w * j + i];
-            conds_y[j * w +i] = conditional/marginalTemp;
+            conds_y[j * w + i] = conditional/marginalTemp;
         }
         marginal += marginalTemp;
         marginal_y[j] = marginal;
     }
 
-	if (false)
+	if (true)
 		std::cout << "Saving out probability_debug image for debug." << std::endl;
 		save_probability_debug();
 
@@ -149,7 +149,7 @@ Spectrum EnvironmentLight::sample_L(const Vector3D& p, Vector3D* wi,
         }
     }
     for (int i = 0; i < w; i++) {
-        if (conds_y[y+i] >= sample.x) {
+        if (conds_y[y * w + i] >= sample.x) {
             x = i;
             break;
         }
@@ -157,9 +157,9 @@ Spectrum EnvironmentLight::sample_L(const Vector3D& p, Vector3D* wi,
     Vector2D polar = xy_to_theta_phi(Vector2D(x, y));
     Vector3D dir = theta_phi_to_dir(polar);
     *wi = dir;
-    *pdf = pdf_envmap[y*w + x]*w*h/(2*PI*PI*sin(polar.x));
+    *pdf = (pdf_envmap[y * w + x] * w * h)/(2 * PI * PI * sin(polar.x));
     *distToLight = INF_D;
-    return envMap->data[w * y + x];
+    return bilerp(Vector2D(x, y));
 }
 
 Spectrum EnvironmentLight::sample_dir(const Ray& r) const {

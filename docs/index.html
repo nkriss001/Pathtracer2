@@ -9,51 +9,212 @@
       padding-left: 100px;  
     }  
   </style> 
-<title>Your Name  |  CS 184</title>
+<title>Assignment 3_2  |  CS 184</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
 </head>
 <body>
 <br />
-<h1 align="middle">Assignment 3: PathTracer</h1>
-    <h2 align="middle">Your Name</h2>
+<h1 align="middle">Assignment 3_2: PathTracer</h1>
+    <h2 align="middle">Nicholas Kriss</h2>
 
     <div class="padded">
-        <p>Use this section to write an overview of the assignment. All of the text in your write-up should be <em>in your own words</em>. If you need to add additional HTML features to this document, you can search the <a href="http://www.w3schools.com/">http://www.w3schools.com/</a> website for instructions. To edit the HTML, you can just copy and paste existing chunks and fill in the text and image file names appropriately.</p>
-        <o>The website writeup is intended to be a self-contained walkthrough of the assignment: we want this to be a piece of work which showcases your understanding of relevant concepts through both mesh images as well as written explanations about what you did to complete each part of the assignment. Try to be as clear and organized as possible when writing about your own output files or extensions to the assignment. We want to understand what you've achieved and how you've done it!</p> 
-        <p>If you are well-versed in web development, feel free to ditch this template and make a better looking page. Just make sure that you include all the components as we've laid them out here. </p>
+        <p>For this project, I built on ray tracing protocols I had developed in the previous project to create more realistic scenes. First, I mirror and glass materials, which unlike diffuse materials will cast rays in a particular direction and generate a different BSDF depending on which direction light bounces off. This part I found the most second most difficult, since I had to modify my code for sphere intersections to make sure I accounted for rays starting inside the sphere, and I spent a lot of time trying to fix an error with the glass sphere that resulted from mixing up my incoming and outgoing rays. Second, I implemented microfacet materials which can represent specular surfaces with a wide range of reflective properties. This part was fairly easy, though it took me a bit to double check all of the formulas. Third, I implemented environment lighting from an infinite distance. I found this to be the hardest part, since there were many different checks I had to add to my previous code. Fourth, I implemented camera effects, allowing me to modify the lens radius and depth of field by assuming a thin lens model. For this part, I initially failed to edit my ray casting procedure in the case where we cast more than one sample per pixel, and once added that I kept casting rays exactly from the middle of the pixel rather than at random. This cost me a lot of time, since it kept giving me lots of noise even when I seemingly increased the sampling rate, though I managed to track the problem to this part and eventually solve it. Finally, I implemented a few simple shading programs in GLSL to create realistic shading in real time.</p>
 
-    <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
-        <p>Describe what you did in Part 1. etc...</p>
+    <h2 align="middle">Part 1: Mirror and Glass Materials</h2>
+        <p>All images were sampled with 64 samples per pixel and 4 samples per light.s</p>
         <div align="center">
             <table style="width=100%">
                 <tr>
-                    <td align="middle">
-                    <img src="images/example_image.png" width="480px" />
-                    <figcaption align="middle">Results Caption: my bunny is the bounciest bunny</figcaption>
+                    <td align="left">
+                    <img src="images/CBspheres_0_1_64_4_0.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 0, only shows direct lighting effects, like the ceiling light</figcaption>
+                    <img src="images/CBspheres_0_1_64_4_1.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 1, adds diffuse surfaces that are not on the same plane as the light, like the walls and floor but not the ceiling or non-diffuse balls</figcaption>
+                    <img src="images/CBspheres_0_1_64_4_2.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 2, adds ceiling and specular surfaces, including the reflective parts of the glass ball and most of the mirror ball</figcaption>
+                    <img src="images/CBspheres_0_1_64_4_3.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 3, adds ceiling reflected in mirror ball and light refracted through glass ball</figcaption>
+                    <img src="images/CBspheres_0_1_64_4_4.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 4, adds light refracted through glass ball and reflected in mirror ball, and ceiling light refracted through glass ball onto the floor</figcaption>
+                    <img src="images/CBspheres_0_1_64_4_5.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 5, adds light reflected onto the bottom of the glass ball and refracted onto the right wall</figcaption>
+                    <img src="images/CBspheres_0_1_64_4_100.png" width="480px" />
+                    <figcaption align="middle">max_ray_depth = 100, adds some noise and makes the glass ball a bit brighter, but it looks like the image had basically converged after max_ray_depth 5</figcaption>
                 </tr>
             </table>
         </div>
-        <p>Here is an example of how to include a simple formula:</p>
-        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
-        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
 
+    <h2 align="middle">Part 2: Microfacet Material</h2>
+        <p>All CBdragon_microfacet_au images were generated with 128 samples per pixel, 1 sample per light, and 5 bounces per ray.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/CBdragon_microfacet_au_005_0_1_128_1_5.png" width="480px" />
+                    <figcaption align="middle">alpha = 0.005</figcaption>
+                    <img src="images/CBdragon_microfacet_au_05_0_1_128_1_5.png" width="480px" />
+                    <figcaption align="middle">alpha = 0.05</figcaption>
+                    <img src="images/CBdragon_microfacet_au_25_0_1_128_1_5.png" width="480px" />
+                    <figcaption align="middle">alpha = 0.25</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_0_1_128_1_5.png" width="480px" />
+                    <figcaption align="middle">alpha = 0.5</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>It is clear that as alpha increases, the surface of the dragon becomes less reflective. At alpha = 0.005, the dragon is extremely fully reflective, and thus we also get a lot of noise. We get even more noise at alpha = 0.05, which is reflecting less of the scene and more of the light. At alpha = 0.25, we can still see the scene reflected in the neck of the dragon, but by now it is mostly only reflecting the light. At alpha = 0.5, the dragon almost looks diffuse, has become very bright, and has very little noise.</p>
 
+        <p>Both CBbunny_microfacet_cu images were generated with 64 samples per pixel, 1 sample per light, and 5 bounces per ray.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/CBbunny_microfacet_cu_cosine_0_1_64_1_5.png" width="480px" />
+                    <figcaption align="middle">cosine hemisphere sampling</figcaption>
+                    <img src="images/CBbunny_microfacet_cu_importance_0_1_64_1_5.png" width="480px" />
+                    <figcaption align="middle">importance sampling</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>It is clear that cosine sampling gives a lot more noise, which we would expect from sampling a random direction instead of sampling towards the light as in importance sampling. In particular, there are a lot more black spots on the cosine sampled bunny, particularly around the edges, though the scene is still reflected. The importance sampled bunny shows the scene in much better detail and has almost no noise on the bunny itself, so there is only slightly less noise in the rest of the scene.</p>
 
-    <h2 align="middle">A Few Notes On Webpages</h2>
-        <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
-        <ul>
-        <li>Your main report page should be called index.html.</li>
-        <li>Be sure to include and turn in all of the other files (such as images) that are linked in your report!</li>
-        <li>Use only <em>relative</em> paths to files, such as <pre>"./images/image.jpg"</pre>
-        Do <em>NOT</em> use absolute paths, such as <pre>"/Users/student/Desktop/image.jpg"</pre></li>
-        <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
-        <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
-        <li>And again, test your website on the instructional machines early!</li>
+        <p>This bunny is meant to represent germanium. It was generated with 128 samples per pixel, 1 sample per light, and 5 bounces per ray.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/CBbunny_microfacet_ge_0_1_128_1_5.png" width="480px" />
+                    <figcaption align="middle">Germanium bunny</figcaption>
+                </tr>
+            </table>
+        </div>
 
-    <h2 align="middle">Part 5: Shaders</h2>
-        <a href="gl/index.html">Include a link to your gl directory after completing part 5!</a>
+    <h2 align="middle">Part 3: Environment Light</h2>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/probability_debug.png" width="480px" />
+                    <figcaption align="middle">The probability distribution of field.exr</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <p>All 4 images were generated with 64 samples per pixel, 4 samples per light, and 5 bounces per ray, using field.exr.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/bunny_unlit_cosine_0_1_64_4_5.png" width="480px" />
+                    <figcaption align="middle">bunny_unlit cosine hemisphere sampling</figcaption>
+                    <img src="images/bunny_unlit_importance_0_1_64_4_5.png" width="480px" />
+                    <figcaption align="middle">bunny_unlit importance sampling</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/bunny_microfacet_cu_unlit_cosine_0_1_64_4_5.png" width="480px" />
+                    <figcaption align="middle">bunny_microfacet_cu_unlit cosine hemisphere sampling</figcaption>
+                    <img src="images/bunny_microfacet_cu_unlit_importance_0_1_64_4_5.png" width="480px" />
+                    <figcaption align="middle">bunny_microfacet_cu_unlit importance sampling</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <p>The difference between importance and hemisphere sampling is not especially pronounced in the diffuse bunny_unlit model, with the most obvious difference being that importance sampling produces a slightly darker bunny. The difference is much clearer with the reflective microfacet bunny. In particular, the microfacet bunny has almost no noise with importance sampling, except where it reflects the noisy base, whereas with hemisphere sampling the entire bunny is noisy, especially near the edges. The base also has a few white spots with hemisphere sampling, which are not present in importance sampling.</p>
+
+    <h2 align="middle">Part 4: Depth of Field</h2>
+        <p>All images were generated with 128 samples per pixel, 4 samples per light, and 5 bounces per ray.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/CBdragon_microfacet_au_5_02_47_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 0.2, d = 4.7</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_04_47_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 0.4, d = 4.7</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_08_47_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 0.8, d = 4.7</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_1_47_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 1.0, d = 4.7</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/CBdragon_microfacet_au_5_02_1_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 0.2, d = 1.0</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_02_3_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 0.4, d = 3.0</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_02_5_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 0.8, d = 5.0</figcaption>
+                    <img src="images/CBdragon_microfacet_au_5_02_7_128_4_5.png" width="480px" />
+                    <figcaption align="middle">b = 1.0, d = 7.0</figcaption>
+                </tr>
+            </table>
+        </div>
+
+    <h2 align="middle">Part 5: Shading</h2>
+        <p>index.html: http://cs184sp18.github.io/proj3_2-pathtracer-nkriss001/gl/html</p>
+        <p>A shader program is a way of creating realistic lighting in renders in real time by applying transformations to vertices and fragments to create lighting effects. Generally, the shader program will change the position and normals of vertices in a vertex shader for processing as fragments in the fragment shader. The fragment shader ultimately determines the color, and thus lighting effects, at the points of a scene. By separating these processes into different programs, the shader program can run them in parallel and achieve much faster results.</p>
+
+        <p>The Blinn-Phong shading model works by summing the different types of shading that occur on a model. Specifically, it calculates ambient shading, the constant color output by a surface; diffuse shading, the color output from a light source that is independent of view direction; and specular shading, the color output in the direction of reflected light.</p>
+        <p>For my images, I am using k_a = 0.0, k_d = 0.8, k_s = 0.5, I_a = 1.0, and p = 28.0.</p>
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/ambient.png" width="480px" />
+                    <figcaption align="middle">Ambient lighting only</figcaption>
+                    <img src="images/diffuse.png" width="480px" />
+                    <figcaption align="middle">Diffuse lighting only</figcaption>
+                    <img src="images/specular.png" width="480px" />
+                    <figcaption align="middle">Specular light only</figcaption>
+                    <img src="images/full.png" width="480px" />
+                    <figcaption align="middle">Full Blinn-Phong shading</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/earth.png" width="480px" />
+                    <figcaption align="middle">Part 3: Texture Mapping</figcaption>
+                </tr>
+            </table>
+        </div>
+
+        <div align="center">
+            <table style="width=100%">
+                <tr>
+                    <td align="left">
+                    <img src="images/bump.png" width="480px" />
+                    <figcaption align="middle">Bump mapping with displacement3 with 256 horizontal and 256 vertical components</figcaption>
+                    <img src="images/displacement.png" width="480px" />
+                    <figcaption align="middle">Displacement mapping with displacement3 with 256 horizontal and 256 vertical components</figcaption>
+                    <img src="images/bumph50.png" width="480px" />
+                    <figcaption align="middle">Bump mapping with displacement3 with 50 horizontal and 256 vertical components</figcaption>
+                    <img src="images/displacementh50.png" width="480px" />
+                    <figcaption align="middle">Displacement mapping with displacement3 with 50 horizontal and 256 vertical components</figcaption>
+                    <img src="images/bumpv50.png" width="480px" />
+                    <figcaption align="middle">Bump mapping with displacement3 with 256 horizontal and 50 vertical components</figcaption>
+                    <img src="images/displacementv50.png" width="480px" />
+                    <figcaption align="middle">Displacement mapping with displacement3 with 256 horizontal and 50 vertical components</figcaption>
+                </tr>
+            </table>
+        </div>
+        <p>In bump mapping, we only modify the normals of the object, whereas in displacement mapping modify the positions of vertices and then move the normals to be consistent with the moved vertices. In both cases, we make our modifications to try to match the heigh map of a texture, which tells how raised certain parts of the texture should be. Because bump mapping only modifies the object's normals, it only creates the appearance that the object has bumps on its surface, whereas displacement mapping can actually create physical features on the surface by moving the vertices and then moving the normals to the appropriate locations. As a result, displacement mapping looks has more exaggerated features than bump mapping. Displacement mapping responds better to mesh courseness, retaining most of the grooves in its surface even as the texture quality decreases, whereas the bumps in bump mapping become less obvious as the texture becomes worse.</p>
+
+        <p>For my custom shader, I used the base code from part 4 and added color on top of a texture by multiplying the result of Blinn-Phong shading with my chosen color, which I scaled down to not overpower the texture. I also added a second sphere to the scene and had it rotate around the first, though I'm not yet sure how to make the two objects interact when calculating the lighting.</p>
 </div>
 </body>
 </html>

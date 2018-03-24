@@ -117,11 +117,12 @@ Spectrum MicrofacetBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) 
       *pdf = 0;
       return Spectrum();
     }
-    double pTheta = 2.0*sin(theta)/(pow(alpha, 2.0)*pow(cos(theta), 3.0))*exp(-pow(tan(theta)/alpha, 2.0));
+    double pTheta = 2.0*sin(theta)/(pow(alpha, 2.0)*pow(cos(theta), 3.0))/exp(pow(tan(theta)/alpha, 2.0));
     double pPhi  = 1/(2.0*PI);
     double ph = (pTheta * pPhi)/sin(theta);
     double pwi = ph/(4.0*dot(*wi, h));
     *pdf = pwi;
+    //*wi = cosineHemisphereSampler.get_sample(pdf);
     return MicrofacetBSDF::f(wo, *wi);
 }
 
